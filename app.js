@@ -1,4 +1,4 @@
-import { categories, products, articles } from "./catalog.js";
+import { categories, products, articles } from "./catalog.js?v=3";
 
 const main = document.querySelector("#main");
 const panel = document.querySelector("#panel");
@@ -273,9 +273,13 @@ function card(p) {
     p.type +
     "</small><h3>" +
     p.name +
-    "</h3><span>" +
+    '</h3><small class="card-spec">' +
+    esc(p.summary) +
+    "</small><span>" +
     money(p.price) +
-    '</span></a><button class="square" data-act="add" data-id="' +
+    ' <small class="price-unit">' +
+    esc(p.priceUnit) +
+    '</small></span></a><button class="square" data-act="add" data-id="' +
     p.id +
     '" aria-label="Add ' +
     p.name +
@@ -380,7 +384,11 @@ function shop(id, params) {
     eyebrow("The catalog") +
     "<h1>" +
     (c ? c.name : "Shop all equipment") +
-    '</h1><div class="filters"><div class="pills"><a href="' +
+    '</h1><p class="collection-intro">' +
+    (c
+      ? esc(c.intro)
+      : "Browse complete stereo speakers, individual drivers, crossover components, and amplification. Each listing includes its selling unit, example specifications, and the checks to make before choosing it for a system.") +
+    '</p><div class="filters"><div class="pills"><a href="' +
     categoryHref("") +
     '" class="' +
     (!c ? "selected" : "") +
@@ -438,37 +446,60 @@ function shop(id, params) {
   );
 }
 function detail(p) {
-  const c = categories.find((c) => c.id === p.category);
-  return (
-    '<div class="container inner">' +
-    crumbs([["Catalog", "#/shop"], [c.name, catLink(c.id)], [p.name]]) +
-    '<div class="detail"><div class="detail-photo">' +
-    photo(p.img, p.name + " " + p.type) +
-    '</div><div class="detail-copy">' +
-    eyebrow(p.type) +
-    "<h1>" +
-    p.name +
-    '</h1><div class="price">' +
-    money(p.price) +
-    "</div><p>" +
-    p.desc +
-    '</p><div class="buy"><label>Quantity <input id="quantity" type="number" required value="1" min="1" max="99"></label><button class="btn primary" data-act="buy" data-id="' +
-    p.id +
-    '">Add to bag ' +
-    icon("bag", 17) +
-    "</button></div><h3>Technical specifications</h3><dl>" +
-    Object.entries(p.specs)
-      .map(([k, v]) => "<div><dt>" + k + "</dt><dd>" + v + "</dd></div>")
-      .join("") +
-    '</dl><small>Concept product. Pricing and specifications are illustrative.</small></div></div><div class="section">' +
-    sectionHead("In this collection", "Explore more") +
-    '<div class="product-grid">' +
-    products
-      .filter((o) => o.category === p.category && o.id !== p.id)
-      .map(card)
-      .join("") +
-    "</div></div></div>"
+  const category = categories.find((c) => c.id === p.category);
+  const guide = articles.find((a) => a.id === category.guide);
+  const specs = Object.entries(p.specs)
+    .map(
+      ([label, value]) =>
+        `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`,
+    )
+    .join("");
+  const notes = p.notes
+    .map(
+      ([heading, copy]) =>
+        `<section><h3>${esc(heading)}</h3><p>${esc(copy)}</p></section>`,
+    )
+    .join("");
+  const questions = p.faq
+    .map(
+      ([question, answer]) =>
+        `<details><summary>${esc(question)}</summary><p>${esc(answer)}</p></details>`,
+    )
+    .join("");
+  const alternatives = products.filter(
+    (other) => other.category === p.category && other.id !== p.id,
   );
+  return `<div class="container inner">
+    ${crumbs([["Catalog", "#/shop"], [category.name, catLink(category.id)], [p.name]])}
+    <div class="detail">
+      <div class="detail-photo">${photo(p.img, p.name + " " + p.type)}</div>
+      <div class="detail-copy">
+        ${eyebrow(p.type)}
+        <h1>${esc(p.name)}</h1>
+        <p class="model-summary">${esc(p.summary)}</p>
+        <p>${esc(p.desc)}</p>
+        <div class="price">${money(p.price)} <small>${esc(p.priceUnit)}</small></div>
+        <div class="buy"><label>Quantity <input id="quantity" type="number" required value="1" min="1" max="99"></label>
+        <button class="btn primary" data-act="buy" data-id="${p.id}">Add to bag ${icon("bag", 17)}</button></div>
+        <small class="model-ref">Model ${esc(p.id.toUpperCase())} · Concept product</small>
+        <small>Sample pricing and specifications for this demo.</small>
+      </div>
+    </div>
+    <div class="product-manual">
+      <section class="spec-block">
+        <h2>Technical specifications</h2><dl>${specs}</dl>
+      </section>
+      <section class="build-notes">
+        <h2>Setup &amp; compatibility</h2>${notes}
+      </section>
+    </div>
+    <div class="product-resources">
+      <section class="product-faq"><h2>Product questions</h2>${questions}</section>
+      <aside class="product-guide"><h2>From the workbench</h2>${articleCard(guide)}</aside>
+    </div>
+    <section class="section">${sectionHead("In this collection", "Explore more", catLink(category.id), "View collection")}
+    <div class="product-grid">${alternatives.map(card).join("")}</div></section>
+  </div>`;
 }
 function journal(a) {
   if (!a)
@@ -550,6 +581,9 @@ function matches(p, q) {
     p.category,
     categories.find((c) => c.id === p.category).name,
     p.desc,
+    p.summary,
+    p.id,
+    ...Object.values(p.specs),
   ]
     .join(" ")
     .toLowerCase()

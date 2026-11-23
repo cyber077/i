@@ -1488,3 +1488,116 @@ dialog.modal {
     height: 38px;
   }
 }
+
+/* Buying information and model-specific setup notes */
+.collection-intro {
+  max-width: 70ch;
+  color: #c0c1b9;
+  margin: -10px 0 26px;
+  line-height: 1.7;
+}
+.product-info .card-spec {
+  font-size: 12px;
+  line-height: 1.5;
+  margin-bottom: 7px;
+}
+.product-info .price-unit,
+.price small {
+  display: inline;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.detail-copy .model-summary {
+  color: #e8bc9e;
+  margin: 0 0 18px;
+  font-size: 14px;
+}
+.detail-copy .model-ref {
+  display: block;
+  margin-bottom: 4px;
+}
+.detail-copy .buy {
+  margin-bottom: 14px;
+}
+.product-manual,
+.product-resources {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(24px, 5vw, 78px);
+  padding: clamp(25px, 3.5vw, 54px) 0;
+  border-bottom: 1px solid var(--line);
+}
+.product-manual {
+  border-top: 1px solid var(--line);
+  margin-top: clamp(28px, 4vw, 58px);
+}
+.product-manual h2,
+.product-resources h2 {
+  font: 800 clamp(25px, 2.4vw, 38px) / 1.1 var(--head);
+  letter-spacing: -0.035em;
+  margin: 0 0 18px;
+}
+.spec-block dl {
+  margin: 0;
+}
+.spec-block dl div {
+  padding: 11px 0;
+  align-items: baseline;
+}
+.spec-block dd {
+  text-align: right;
+}
+.build-notes section + section {
+  margin-top: 16px;
+}
+.build-notes h3 {
+  font:
+    600 15px/1.35 Inter,
+    sans-serif;
+  margin: 0 0 5px;
+}
+.build-notes p,
+.product-faq p {
+  font-size: 14px;
+  color: #c2c3bc;
+  line-height: 1.7;
+  max-width: 67ch;
+}
+.product-faq details {
+  border-bottom: 1px solid var(--line);
+}
+.product-faq summary {
+  cursor: pointer;
+  padding: 13px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.product-faq summary::marker {
+  color: var(--orange);
+}
+.product-faq p {
+  margin: 0 0 15px;
+}
+@media (max-width: 720px) {
+  .product-manual,
+  .product-resources {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 26px;
+  }
+  .collection-intro {
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+  .product-info .price-unit {
+    display: block;
+    font-size: 11px;
+  }
+  .product-info .card-spec {
+    font-size: 11px;
+  }
+  .product-manual h2,
+  .product-resources h2 {
+    margin-bottom: 13px;
+  }
+}
