@@ -83,6 +83,7 @@ let cart = Object.fromEntries(
     .map((p) => [p.id, Math.min(99, savedCart[p.id])]),
 );
 let slide = 0;
+let carouselObserver;
 let noticeTimer;
 function toast(message) {
   const el = document.querySelector("#notice");
@@ -201,51 +202,102 @@ const slides = [
   },
 ];
 function hero() {
-  const s = slides[slide];
-  return (
-    '<div class="hero-image hero-image-' +
-    slide +
-    '">' +
-    photo(s.img, s.alt, 'fetchpriority="high"') +
-    '</div><div class="hero-shade"></div><div class="hero-content container"><div class="hero-copy">' +
-    eyebrow(s.tag) +
-    "<h1>" +
-    s.title +
-    "<br><em>" +
-    s.accent +
-    "</em></h1><p>" +
-    s.desc +
-    '</p><div class="hero-links">' +
-    buttonLink(s.action, s.button) +
-    buttonLink("#/journal/first-build", "Build guide", "secondary", "up") +
-    '</div></div><div class="hero-foot"><div class="slide-nav"><span class="mono"><b>0' +
-    (slide + 1) +
-    '</b> / 03</span><div class="bars">' +
-    slides
-      .map(
-        (_, i) =>
-          '<button aria-label="Show feature ' +
-          (i + 1) +
-          '" aria-pressed="' +
-          (slide === i) +
-          '" class="' +
-          (slide === i ? "active" : "") +
-          '" data-act="slide" data-id="' +
-          i +
-          '"></button>',
-      )
-      .join("") +
-    '</div></div><a class="fig" href="#/product/' +
-    s.id +
-    '"><i></i> ' +
-    s.model +
-    "<span> — " +
-    s.caption +
-    "</span>" +
-    icon("up", 13) +
-    "</a></div></div>"
-  );
+  const panels = slides
+    .map((s, i) => {
+      const heading = i === 0 ? "h1" : "h2";
+      return `<div class="feature-slide" role="group" aria-roledescription="slide" aria-label="${i + 1} of ${slides.length}" ${i === slide ? "" : "inert"}>
+      <div class="hero-image hero-image-${i}">${photo(s.img, s.alt, i === slide ? 'fetchpriority="high"' : 'loading="lazy"')}</div>
+      <div class="hero-shade"></div><div class="hero-content container"><div class="hero-copy">
+        ${eyebrow(s.tag)}<${heading} class="feature-heading">${s.title}<br><em>${s.accent}</em></${heading}>
+        <p>${s.desc}</p><div class="hero-links">${buttonLink(s.action, s.button)}${buttonLink("#/journal/first-build", "Build guide", "secondary", "up")}</div>
+      </div></div></div>`;
+    })
+    .join("");
+  const bars = slides
+    .map(
+      (s, i) =>
+        `<button data-act="slide" data-id="${i}" aria-controls="features" aria-label="Show feature ${i + 1}, ${s.model}" aria-pressed="${i === slide}" class="${i === slide ? "active" : ""}"></button>`,
+    )
+    .join("");
+  return `<div class="feature-track" id="features" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Featured equipment">${panels}</div>
+    <div class="container hero-foot"><div class="slide-nav"><span class="mono" aria-live="polite" aria-atomic="true"><b></b> / ${String(slides.length).padStart(2, "0")}</span><div class="bars">${bars}</div></div>
+    <a class="fig"><i></i><b></b><span></span>${icon("up", 13)}</a></div>`;
 }
+
+function cardShelf(id, layout, label, cards) {
+  const trackId = id + "-shelf";
+  return `<div class="shelf"><div class="${layout} shelf-track" id="${trackId}" role="region" aria-label="${label}">${cards.join("")}</div>
+    <div class="shelf-controls">
+      <span class="shelf-meter" aria-hidden="true"><i></i></span>
+      <button class="square" data-step="-1" aria-label="Previous items in ${label}" aria-controls="${trackId}">${icon("left", 16)}</button>
+      <button class="square" data-step="1" aria-label="Next items in ${label}" aria-controls="${trackId}">${icon("next", 16)}</button>
+    </div></div>`;
+}
+
+function setupCarousels() {
+  const features = document.querySelector("#features");
+  if (!features) return;
+  const hero = features.closest(".hero");
+  const dots = [...hero.querySelectorAll(".bars button")];
+  let renderedSlide;
+  function syncFeature() {
+    if (!features.clientWidth) return;
+    slide = Math.max(
+      0,
+      Math.min(
+        slides.length - 1,
+        Math.round(features.scrollLeft / features.clientWidth),
+      ),
+    );
+    if (renderedSlide === slide) return;
+    renderedSlide = slide;
+    const selected = slides[slide];
+    for (const [i, dot] of dots.entries()) {
+      features.children[i].inert = i !== slide;
+      dot.classList.toggle("active", i === slide);
+      dot.setAttribute("aria-pressed", String(i === slide));
+    }
+    hero.querySelector(".slide-nav b").textContent = "0" + (slide + 1);
+    const link = hero.querySelector(".fig");
+    link.href = "#/product/" + selected.id;
+    link.querySelector("b").textContent = selected.model;
+    link.querySelector("span").textContent = " — " + selected.caption;
+  }
+  features.scrollTo({
+    left: slide * features.clientWidth,
+    behavior: "instant",
+  });
+  features.addEventListener("scroll", syncFeature, { passive: true });
+  syncFeature();
+  const shelves = [...main.querySelectorAll(".shelf-track")];
+  function syncShelf(track) {
+    const max = track.scrollWidth - track.clientWidth;
+    const controls = track.nextElementSibling;
+    controls.querySelector('[data-step="-1"]').disabled = track.scrollLeft <= 1;
+    controls.querySelector('[data-step="1"]').disabled =
+      track.scrollLeft >= max - 1;
+    const meter = controls.querySelector(".shelf-meter i");
+    const fraction = track.clientWidth / (track.scrollWidth || 1);
+    meter.style.width = 100 * fraction + "%";
+    meter.style.left =
+      (100 * Math.max(0, Math.min(max, track.scrollLeft))) /
+        (track.scrollWidth || 1) +
+      "%";
+  }
+  carouselObserver = new ResizeObserver((entries) => {
+    for (const { target } of entries) {
+      if (target === features) syncFeature();
+      else syncShelf(target);
+    }
+  });
+  carouselObserver.observe(features);
+  for (const track of shelves) {
+    track.addEventListener("scroll", () => syncShelf(track), { passive: true });
+    carouselObserver.observe(track);
+    syncShelf(track);
+  }
+}
+
 function categoryCard(c) {
   return (
     '<a class="category-card" href="' +
@@ -327,22 +379,34 @@ function home() {
     hero() +
     '</section><section class="section container" id="categories">' +
     sectionHead("The catalog", "Shop by category", "#/shop", "View all") +
-    '<div class="categories">' +
-    categories.map(categoryCard).join("") +
-    '</div></section><section class="section ruled"><div class="container">' +
+    cardShelf(
+      "collections",
+      "categories",
+      "Shop by category",
+      categories.map(categoryCard),
+    ) +
+    '</section><section class="section ruled"><div class="container">' +
     sectionHead(
       "The shortlist",
       "Featured equipment",
       "#/shop",
       "Browse catalog",
     ) +
-    '<div class="product-grid">' +
-    products.slice(0, 4).map(card).join("") +
-    '</div></div></section><section class="section container">' +
+    cardShelf(
+      "shortlist",
+      "product-grid",
+      "Featured equipment",
+      products.slice(0, 4).map(card),
+    ) +
+    '</div></section><section class="section container">' +
     sectionHead("From the workbench", "Field notes", "#/journal", "All notes") +
-    '<div class="article-grid">' +
-    articles.map(articleCard).join("") +
-    "</div></section>"
+    cardShelf(
+      "notes",
+      "article-grid",
+      "Field notes",
+      articles.map(articleCard),
+    ) +
+    "</section>"
   );
 }
 function crumbs(items) {
@@ -570,7 +634,9 @@ function route() {
       "</div>";
     title = "Page not found";
   }
+  carouselObserver?.disconnect();
   main.innerHTML = html;
+  setupCarousels();
   document.title = title + " — Ignite";
   window.scrollTo({ top: 0, behavior: "instant" });
 }
@@ -711,6 +777,18 @@ document.addEventListener("click", (e) => {
     return;
   }
   if (a && panel.contains(a) && panel.open) panel.close();
+  const step = e.target.closest("[data-step]");
+  if (step) {
+    const track = document.getElementById(step.getAttribute("aria-controls"));
+    const stride =
+      track.children[1].getBoundingClientRect().left -
+      track.firstElementChild.getBoundingClientRect().left;
+    track.scrollBy({
+      left: Number(step.dataset.step) * stride,
+      behavior: "auto",
+    });
+    return;
+  }
   const el = e.target.closest("[data-act]");
   if (!el) return;
   const { act, id } = el.dataset;
@@ -719,11 +797,11 @@ document.addEventListener("click", (e) => {
     return;
   }
   if (act === "slide") {
-    slide = Number(id);
-    document.querySelector("#hero").innerHTML = hero();
-    document
-      .querySelector('[data-act="slide"][data-id="' + id + '"]')
-      .focus({ preventScroll: true });
+    const features = document.querySelector("#features");
+    features.scrollTo({
+      left: Number(id) * features.clientWidth,
+      behavior: "auto",
+    });
     return;
   }
   if (act === "bag") {

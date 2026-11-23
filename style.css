@@ -319,13 +319,13 @@ header {
 .signal i:nth-child(4) {
   height: 8px;
 }
-.hero h1 {
+.hero .feature-heading {
   font: 800 clamp(76px, 7.8vw, 125px) / 0.86 var(--head);
   letter-spacing: -0.058em;
   text-transform: uppercase;
   margin: 19px 0 20px;
 }
-.hero h1 em {
+.hero .feature-heading em {
   font-style: normal;
   color: var(--orange);
 }
@@ -1116,7 +1116,7 @@ dialog.modal {
   .hero-copy {
     max-width: 420px;
   }
-  .hero h1 {
+  .hero .feature-heading {
     font-size: clamp(67px, 13vw, 90px);
     margin: 15px 0;
   }
@@ -1359,7 +1359,7 @@ dialog.modal {
     min-height: clamp(382px, 56svh, 460px);
     padding-block: 72px 64px;
   }
-  .hero h1 {
+  .hero .feature-heading {
     font-size: clamp(55px, 15vw, 82px);
   }
   .hero-links .btn {
@@ -1599,5 +1599,95 @@ dialog.modal {
   .product-manual h2,
   .product-resources h2 {
     margin-bottom: 13px;
+  }
+}
+
+.feature-track {
+  display: flex;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+.feature-track::-webkit-scrollbar {
+  display: none;
+}
+.feature-slide {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+.feature-slide .hero-content {
+  height: 100%;
+}
+.hero-foot {
+  pointer-events: none;
+}
+.hero-foot :is(button, a) {
+  pointer-events: auto;
+}
+.fig b {
+  font-weight: inherit;
+}
+.shelf-controls {
+  display: none;
+}
+@media (max-width: 720px) {
+  .shelf-track {
+    display: grid;
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: min(74%, 280px);
+    align-items: stretch;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    padding: 4px;
+    margin: -4px;
+  }
+  .shelf-track::-webkit-scrollbar {
+    display: none;
+  }
+  .shelf-track > * {
+    scroll-snap-align: start;
+    min-width: 0;
+  }
+  .shelf-track.article-grid {
+    grid-auto-columns: min(88%, 390px);
+  }
+  .shelf-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .shelf-controls .square {
+    width: 44px;
+    height: 44px;
+    flex: none;
+  }
+  .shelf-meter {
+    flex: 1;
+    height: 2px;
+    background: var(--line);
+    position: relative;
+    margin-right: 14px;
+  }
+  .shelf-meter i {
+    position: absolute;
+    height: 100%;
+    background: var(--orange);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .feature-track,
+  .shelf-track {
+    scroll-behavior: auto;
   }
 }
